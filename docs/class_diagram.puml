@@ -1,0 +1,289 @@
+@startuml Class Diagram - Online News Portal
+
+package "Core Layer" {
+    class User {
+        -id: int
+        -username: string
+        -email: string
+        -password_hash: string
+        -full_name: string
+        -subscription_type: SubscriptionType
+        -is_active: bool
+        -is_admin: bool
+        -created_at: datetime
+        -updated_at: datetime
+        +can_access_exclusive_content(): bool
+        +has_ad_free_experience(): bool
+    }
+    
+    enum SubscriptionType {
+        FREE
+        PAID
+        PREMIUM
+    }
+    
+    class Article {
+        -id: int
+        -title: string
+        -content: string
+        -summary: string
+        -author_id: int
+        -category_id: int
+        -status: ArticleStatus
+        -is_exclusive: bool
+        -views_count: int
+        -likes_count: int
+        -comments_count: int
+        -published_at: datetime
+        -created_at: datetime
+        -updated_at: datetime
+        -tags: List[string]
+        +is_published(): bool
+        +increment_views(): void
+    }
+    
+    enum ArticleStatus {
+        DRAFT
+        PUBLISHED
+        ARCHIVED
+    }
+    
+    class Category {
+        -id: int
+        -name: string
+        -slug: string
+        -description: string
+        -created_at: datetime
+        -updated_at: datetime
+    }
+    
+    class Comment {
+        -id: int
+        -content: string
+        -user_id: int
+        -article_id: int
+        -parent_id: int
+        -created_at: datetime
+        -updated_at: datetime
+        +is_reply(): bool
+    }
+    
+    class Like {
+        -id: int
+        -user_id: int
+        -article_id: int
+        -created_at: datetime
+    }
+    
+    class SavedArticle {
+        -id: int
+        -user_id: int
+        -article_id: int
+        -created_at: datetime
+    }
+    
+    class Author {
+        -id: int
+        -user_id: int
+        -bio: string
+        -profile_image_url: string
+        -articles_count: int
+        -followers_count: int
+        -created_at: datetime
+        -updated_at: datetime
+    }
+    
+    class Notification {
+        -id: int
+        -user_id: int
+        -notification_type: NotificationType
+        -title: string
+        -message: string
+        -article_id: int
+        -is_read: bool
+        -created_at: datetime
+        +mark_as_read(): void
+    }
+    
+    enum NotificationType {
+        BREAKING_NEWS
+        DAILY_DIGEST
+        AUTHOR_UPDATE
+        COMMENT_REPLY
+        ARTICLE_LIKE
+    }
+}
+
+package "DAL Layer" {
+    interface IRepository<T> {
+        +get_by_id(id: int): T
+        +get_all(): List[T]
+        +create(entity: T): T
+        +update(entity: T): T
+        +delete(id: int): void
+    }
+    
+    class UserRepository {
+        +get_by_email(email: string): User
+        +get_by_username(username: string): User
+    }
+    
+    class ArticleRepository {
+        +get_by_category(category_id: int): List[Article]
+        +search(query: string): List[Article]
+        +get_published(): List[Article]
+        +get_by_author(author_id: int): List[Article]
+    }
+    
+    class CategoryRepository {
+        +get_by_slug(slug: string): Category
+    }
+    
+    class CommentRepository {
+        +get_by_article(article_id: int): List[Comment]
+        +get_replies(parent_id: int): List[Comment]
+    }
+    
+    class NotificationRepository {
+        +get_unread_by_user(user_id: int): List[Notification]
+        +mark_all_as_read(user_id: int): void
+    }
+}
+
+package "BLL Layer" {
+    interface INotificationStrategy {
+        +send_notification(user_id: int, data: dict): void
+    }
+    
+    class BreakingNewsStrategy {
+        +send_notification(user_id: int, data: dict): void
+    }
+    
+    class DailyDigestStrategy {
+        +send_notification(user_id: int, data: dict): void
+    }
+    
+    class AuthorUpdateStrategy {
+        +send_notification(user_id: int, data: dict): void
+    }
+    
+    class NotificationFactory {
+        +create_strategy(type: NotificationType): INotificationStrategy
+    }
+    
+    class NotificationService {
+        -strategies: dict
+        -observers: List[Observer]
+        +subscribe(observer: Observer): void
+        +unsubscribe(observer: Observer): void
+        +notify_all(event: Event): void
+        +send_notification(user_id: int, type: NotificationType, data: dict): void
+    }
+    
+    interface Observer {
+        +update(event: Event): void
+    }
+    
+    class SubscriptionObserver {
+        +update(event: Event): void
+    }
+    
+    class UserService {
+        +register_user(data: dict): User
+        +authenticate(email: string, password: string): User
+        +update_subscription(user_id: int, subscription_type: SubscriptionType): void
+    }
+    
+    class ArticleService {
+        +create_article(data: dict): Article
+        +publish_article(article_id: int): Article
+        +get_recommendations(user_id: int): List[Article]
+        +search_articles(query: string, filters: dict): List[Article]
+    }
+    
+    class RecommendationService {
+        +get_personalized_recommendations(user_id: int): List[Article]
+        +get_trending_articles(): List[Article]
+    }
+}
+
+package "API Layer" {
+    class UserController {
+        +register()
+        +login()
+        +get_profile()
+        +update_profile()
+    }
+    
+    class ArticleController {
+        +get_articles()
+        +get_article(id: int)
+        +create_article()
+        +update_article(id: int)
+        +delete_article(id: int)
+        +search_articles()
+    }
+    
+    class NotificationController {
+        +get_notifications()
+        +mark_as_read(id: int)
+    }
+    
+    class AdminController {
+        +manage_articles()
+        +manage_users()
+        +manage_categories()
+        +manage_authors()
+    }
+}
+
+' Relationships
+User "1" --> "*" Comment
+User "1" --> "*" Like
+User "1" --> "*" SavedArticle
+User "1" --> "*" Notification
+User "1" --> "0..1" Author
+User --> SubscriptionType
+
+Article "1" --> "*" Comment
+Article "1" --> "*" Like
+Article "1" --> "*" SavedArticle
+Article "*" --> "1" Category
+Article "*" --> "1" Author
+Article --> ArticleStatus
+
+Comment "1" --> "0..1" Comment : parent
+
+Notification --> NotificationType
+
+UserRepository ..|> IRepository
+ArticleRepository ..|> IRepository
+CategoryRepository ..|> IRepository
+CommentRepository ..|> IRepository
+NotificationRepository ..|> IRepository
+
+BreakingNewsStrategy ..|> INotificationStrategy
+DailyDigestStrategy ..|> INotificationStrategy
+AuthorUpdateStrategy ..|> INotificationStrategy
+
+NotificationFactory --> INotificationStrategy
+NotificationService --> INotificationStrategy
+NotificationService --> Observer
+SubscriptionObserver ..|> Observer
+
+UserService --> UserRepository
+ArticleService --> ArticleRepository
+ArticleService --> RecommendationService
+NotificationService --> NotificationRepository
+
+UserController --> UserService
+ArticleController --> ArticleService
+NotificationController --> NotificationService
+AdminController --> UserService
+AdminController --> ArticleService
+
+@enduml
+
+
+
+

@@ -1,0 +1,140 @@
+@startuml ER Diagram - Online News Portal Database
+
+!define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define PRIMARY_KEY(x) <b>x</b>
+!define FOREIGN_KEY(x) <u>x</u>
+
+TABLE(users, "Users") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    username : VARCHAR(50) <<UNIQUE>>
+    email : VARCHAR(100) <<UNIQUE>>
+    password_hash : VARCHAR(255)
+    full_name : VARCHAR(100)
+    subscription_type : ENUM('free', 'paid', 'premium')
+    is_active : BOOLEAN
+    is_admin : BOOLEAN
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+TABLE(categories, "Categories") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    name : VARCHAR(100) <<UNIQUE>>
+    slug : VARCHAR(100) <<UNIQUE>>
+    description : TEXT
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+TABLE(authors, "Authors") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    FOREIGN_KEY(user_id) : INT <<FK>>
+    bio : TEXT
+    profile_image_url : VARCHAR(255)
+    articles_count : INT
+    followers_count : INT
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+TABLE(articles, "Articles") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    title : VARCHAR(255)
+    content : TEXT
+    summary : VARCHAR(500)
+    FOREIGN_KEY(author_id) : INT <<FK>>
+    FOREIGN_KEY(category_id) : INT <<FK>>
+    status : ENUM('draft', 'published', 'archived')
+    is_exclusive : BOOLEAN
+    views_count : INT
+    likes_count : INT
+    comments_count : INT
+    published_at : DATETIME
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+TABLE(article_tags, "Article Tags") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    FOREIGN_KEY(article_id) : INT <<FK>>
+    tag : VARCHAR(50)
+    created_at : DATETIME
+}
+
+TABLE(comments, "Comments") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    content : TEXT
+    FOREIGN_KEY(user_id) : INT <<FK>>
+    FOREIGN_KEY(article_id) : INT <<FK>>
+    FOREIGN_KEY(parent_id) : INT <<FK>>
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+TABLE(likes, "Likes") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    FOREIGN_KEY(user_id) : INT <<FK>>
+    FOREIGN_KEY(article_id) : INT <<FK>>
+    created_at : DATETIME
+}
+
+TABLE(saved_articles, "Saved Articles") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    FOREIGN_KEY(user_id) : INT <<FK>>
+    FOREIGN_KEY(article_id) : INT <<FK>>
+    created_at : DATETIME
+}
+
+TABLE(notifications, "Notifications") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    FOREIGN_KEY(user_id) : INT <<FK>>
+    notification_type : ENUM('breaking_news', 'daily_digest', 'author_update', 'comment_reply', 'article_like')
+    title : VARCHAR(255)
+    message : TEXT
+    FOREIGN_KEY(article_id) : INT <<FK>>
+    is_read : BOOLEAN
+    created_at : DATETIME
+}
+
+TABLE(user_preferences, "User Preferences") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    FOREIGN_KEY(user_id) : INT <<FK>>
+    preferred_categories : JSON
+    notification_settings : JSON
+    created_at : DATETIME
+    updated_at : DATETIME
+}
+
+TABLE(author_followers, "Author Followers") {
+    PRIMARY_KEY(id) : INT <<PK>>
+    FOREIGN_KEY(user_id) : INT <<FK>>
+    FOREIGN_KEY(author_id) : INT <<FK>>
+    created_at : DATETIME
+}
+
+' Relationships
+users ||--o{ authors : "has"
+users ||--o{ comments : "writes"
+users ||--o{ likes : "creates"
+users ||--o{ saved_articles : "saves"
+users ||--o{ notifications : "receives"
+users ||--o| user_preferences : "has"
+
+categories ||--o{ articles : "contains"
+
+authors ||--o{ articles : "writes"
+authors ||--o{ author_followers : "followed_by"
+
+articles ||--o{ comments : "has"
+articles ||--o{ likes : "receives"
+articles ||--o{ saved_articles : "saved_in"
+articles ||--o{ article_tags : "tagged_with"
+articles ||--o{ notifications : "triggers"
+
+comments ||--o{ comments : "replies_to"
+
+@enduml
+
+
+
+
