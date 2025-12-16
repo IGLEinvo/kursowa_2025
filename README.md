@@ -18,28 +18,6 @@ A modern web application simulating an online newspaper with personalized news f
 5. **Notifications**: Breaking news, daily digest, author alerts
 6. **Admin Panel**: Content management, user administration
 
-## Project Structure
-
-```
-Kursowa_4course/
-├── backend/              # Python Flask backend
-│   ├── app/
-│   ├── config/
-│   ├── models/
-│   ├── services/
-│   ├── controllers/
-│   └── requirements.txt
-├── frontend/             # React frontend
-│   ├── src/
-│   ├── public/
-│   └── package.json
-├── database/             # MySQL schema and migrations
-│   └── schema.sql
-├── docs/                 # Documentation and UML diagrams
-└── README.md
-
-```
-
 ## Setup Instructions
 
 ### Prerequisites
